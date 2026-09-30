@@ -2,7 +2,7 @@
   {
     "name": "commission-claim",
     "title": "Tax invoice: commission claim",
-    "for_each": "select distinct l.institution_id as id, l.institution as name from commission_ledger l where l.state = 'claim now' and not exists (select 1 from applications a join courses c on c.id = a.course_id join institutions i on i.id = c.institution_id where a.id = l.application_id and i.country = 'AU' and a.onshore_transfer and a.transfer_exception is null and coalesce(a.accepted_by_provider_on, current_date) > (select value::date from settings where key = 'au_transfer_commission_cutoff')) order by 2",
+    "for_each": "select distinct institution_id as id, institution as name from commission_ledger where state = 'claim now' order by 2",
     "file": "name",
     "sections": [
       {

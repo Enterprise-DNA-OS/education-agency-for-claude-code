@@ -104,7 +104,7 @@ export const reads = {
     select state, institution, student, ref, period, claimable_on, currency, amount_cents, invoice_no, days_since_invoice
     from commission_ledger
     where status in ('expected','invoiced') and (state <> 'expected' or claimable_on <= current_date + 90)
-    order by case state when 'claim now' then 0 when 'overdue' then 1 when 'awaiting payment' then 2 else 3 end, claimable_on`,
+    order by case state when 'claim now' then 0 when 'overdue' then 1 when 'awaiting payment' then 2 when 'expected' then 4 else 3 end, claimable_on`,
 
   'claim-run': `
     select institution, currency, count(*)::int as claims, sum(amount_cents)::bigint as amount_cents,

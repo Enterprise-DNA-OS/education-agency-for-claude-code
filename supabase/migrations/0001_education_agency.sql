@@ -301,6 +301,9 @@ select
   cm.sub_agent_share_cents,
   cm.invoice_no, cm.invoiced_on, cm.paid_on,
   case
+    when cm.status = 'expected' and i.country = 'AU' and a.onshore_transfer and a.transfer_exception is null
+      and coalesce(a.accepted_by_provider_on, current_date) > coalesce((select value::date from settings where key = 'au_transfer_commission_cutoff'), '2026-03-31')
+      then 'hold: onshore transfer'
     when cm.status = 'expected' and cm.claimable_on <= current_date then 'claim now'
     when cm.status = 'invoiced' and cm.invoiced_on + i.pays_within_days < current_date then 'overdue'
     when cm.status = 'invoiced' then 'awaiting payment'
@@ -362,10 +365,10 @@ join applications a on a.id = d.application_id
 where d.status in ('required','rejected','expired') and a.stage not in ('completed','withdrawn','refused','enrolled')
 group by s.name, st.name
 union all
-select 'commission to claim', l.institution, 'accounts', count(*) || ' claims, ' || l.currency || ' ' || to_char(sum(l.amount_cents) / 100.0, 'FM999,999,990') , 1
+select 'commission to claim', l.institution, 'accounts', count(*) || case when count(*) = 1 then ' claim, ' else ' claims, ' end || l.currency || ' ' || to_char(sum(l.amount_cents) / 100.0, 'FM999,999,990') , 1
 from commission_ledger l where l.state = 'claim now' group by l.institution, l.currency
 union all
-select 'commission overdue', l.institution, 'accounts', count(*) || ' invoices, ' || l.currency || ' ' || to_char(sum(l.amount_cents - l.paid_cents) / 100.0, 'FM999,999,990') || ', oldest ' || max(l.days_since_invoice) || ' days', 1
+select 'commission overdue', l.institution, 'accounts', count(*) || case when count(*) = 1 then ' invoice, ' else ' invoices, ' end || l.currency || ' ' || to_char(sum(l.amount_cents - l.paid_cents) / 100.0, 'FM999,999,990') || ', oldest ' || max(l.days_since_invoice) || ' days', 1
 from commission_ledger l where l.state = 'overdue' group by l.institution, l.currency
 union all
 select 'agreement ending', i.name, 'manager',

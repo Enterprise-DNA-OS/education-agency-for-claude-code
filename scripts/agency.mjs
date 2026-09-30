@@ -44,7 +44,7 @@ function show(rows) {
   return table(rows, Object.keys(rows[0]).filter((k) => !k.endsWith('_id') && k !== 'id').map((key) => ({
     key,
     label: key.replace(/_cents$/, '').replaceAll('_', ' '),
-    align: /_cents$|days|^count$|^claims$|^students$|apps|_pct$|^enquiries$|^applied$|^enrolled|_now$/.test(key) ? 'right' : 'left',
+    align: /_cents$|days|^count$|^claims$|^students$|apps|_pct$|^enquiries$|^applied$|^enrolled|_now$|invoices$/.test(key) ? 'right' : 'left',
     width: key === 'body' || key === 'detail' || key === 'who' || key === 'students' || key === 'for_students' ? 70 : 44,
     format: key.endsWith('_cents') ? (v, r) => (v === null || v === undefined ? '' : money(v, r.currency || 'NZD')) : undefined,
   })));
@@ -248,7 +248,8 @@ try {
   } else if (cmd === 'draft-commission-claim') {
     const i = await match(db, 'institutions', rest.join(' '));
     const claims = await db.query("select student, ref, period, claimable_on, currency, amount_cents from commission_ledger where institution_id = $1 and state = 'claim now' order by student", [i.id]);
-    if (!claims.length) throw Error(`Nothing is claimable from ${i.name} today`);
+    const held = await db.query("select student from commission_ledger where institution_id = $1 and state like 'hold%'", [i.id]);
+    if (!claims.length) throw Error(`Nothing is claimable from ${i.name} today${held.length ? `. ${held.length} claim(s) for ${[...new Set(held.map((h) => h.student))].join(', ')} are on hold under the onshore transfer rule: see /compliance` : ''}`);
     const blocked = (await compliance(db)).findings.filter((f) => f.rule.startsWith('AU onshore') && claims.some((c) => f.detail.startsWith(c.ref + ':')));
     if (blocked.length) throw Error(`Not drafted. ${[...new Set(blocked.map((b) => b.record))].join(', ')} may not be claimed (onshore transfer rule). Block it first: block <ref> --reason=...`);
     const total = claims.reduce((s, c) => s + Number(c.amount_cents), 0);
