@@ -15,7 +15,10 @@ That layer used to be the whole product, because talking to a database was hard.
 
 - **A visual board.** Stages are a table you ask about, not cards you drag.
 - **A phone app.** It runs where Claude Code runs.
-- **A vendor help desk.** This is open source. Enterprise DNA supports the installed version for businesses that want someone to call.
+- **A student portal.** Students cannot log in to see their own status. They get the checklist (`npm run docs -- student-checklist`) and emails you approve.
+- **Web forms and campaigns.** No lead forms, bulk email, SMS or WhatsApp campaigns. Enquiries are added by a person or by an import.
+- **Links to other systems.** No StudyLink or Google Drive connection. Documents are tracked here; the files live where you keep them now.
+- **A vendor help desk.** This is open source. Enterprise DNA supports the installed version for businesses that want someone to call, and builds any of the above into it.
 
 ## Who this fits
 

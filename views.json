@@ -2,12 +2,58 @@
   {
     "name": "week",
     "title": "This week",
-    "subtitle": "Education Agency for Claude Code: what needs attention, rendered by npm run view",
+    "subtitle": "Everything that needs a person, from the attention list",
     "sections": [
       {
         "title": "Needs attention",
-        "note": "TODO(author): point this at the industry's attention view (overdue, stuck, quiet).",
-        "sql": "select 'replace me' as item, 'TODO(author)' as why"
+        "note": "Offers expiring, visas not lodged, enquiries gone quiet, money to claim and chase.",
+        "sql": "select reason, who, owner, detail from attention order by priority, reason, who"
+      },
+      {
+        "title": "Offers waiting on the student",
+        "sql": "select ref, student, institution, stage, offer_expires_on, offer_expires_on - current_date as days_left from application_board where stage in ('conditional_offer','unconditional_offer') order by offer_expires_on"
+      },
+      {
+        "title": "Open tasks",
+        "sql": "select t.title, t.due_on, coalesce(s.name, '-') as student, coalesce(st.name, '-') as owner from tasks t left join students s on s.id = t.student_id left join staff st on st.id = t.staff_id where t.done_on is null order by t.due_on"
+      }
+    ]
+  },
+  {
+    "name": "pipeline",
+    "title": "Intakes and applications",
+    "subtitle": "Who is going where, and what happens next",
+    "sections": [
+      {
+        "title": "By intake",
+        "sql": "select to_char(intake, 'YYYY-MM') as intake_month, institution, count(*) as students, string_agg(student || ' (' || replace(stage, '_', ' ') || ')', ', ' order by student) as who from application_board where intake >= current_date - 14 group by 1, 2 order by 1, 2"
+      },
+      {
+        "title": "Every open application",
+        "sql": "select ref, student, institution, course, intake, replace(stage, '_', ' ') as stage, days_in_stage, counsellor, next_step from application_board where stage <> 'enrolled' order by intake"
+      }
+    ]
+  },
+  {
+    "name": "money",
+    "title": "Commission",
+    "subtitle": "What to claim, what to chase, and what is coming",
+    "sections": [
+      {
+        "title": "Claim now",
+        "sql": "select institution, currency, count(*) as claims, sum(amount_cents) as amount_cents, min(claimable_on) as oldest from commission_ledger where state = 'claim now' group by institution, currency order by amount_cents desc"
+      },
+      {
+        "title": "Invoiced and overdue",
+        "sql": "select institution, invoice_no, student, period, currency, amount_cents, days_since_invoice from commission_ledger where state = 'overdue' order by days_since_invoice desc"
+      },
+      {
+        "title": "Expected, next six months",
+        "sql": "select to_char(claimable_on, 'YYYY-MM') as month, currency, count(*) as claims, sum(amount_cents) as amount_cents, sum(amount_cents - sub_agent_share_cents) as ours_cents from commissions where status = 'expected' and claimable_on > current_date and claimable_on <= current_date + 183 group by 1, 2 order by 1, 2"
+      },
+      {
+        "title": "How fast each institution pays",
+        "sql": "select i.name as institution, i.pays_within_days as terms, round(avg(cm.paid_on - cm.invoiced_on), 1) as avg_days, count(*) as paid from commissions cm join applications a on a.id = cm.application_id join courses c on c.id = a.course_id join institutions i on i.id = c.institution_id where cm.status = 'paid' and cm.invoiced_on >= current_date - 730 group by i.id order by avg_days desc"
       }
     ]
   }

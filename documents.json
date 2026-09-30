@@ -1,11 +1,66 @@
 [
   {
-    "name": "example",
-    "title": "TODO(author): the first document this industry must produce",
-    "for_each": "select gen_random_uuid() as id, 'Example' as name",
+    "name": "commission-claim",
+    "title": "Tax invoice: commission claim",
+    "for_each": "select distinct l.institution_id as id, l.institution as name from commission_ledger l where l.state = 'claim now' and not exists (select 1 from applications a join courses c on c.id = a.course_id join institutions i on i.id = c.institution_id where a.id = l.application_id and i.country = 'AU' and a.onshore_transfer and a.transfer_exception is null and coalesce(a.accepted_by_provider_on, current_date) > (select value::date from settings where key = 'au_transfer_commission_cutoff')) order by 2",
     "file": "name",
     "sections": [
-      { "title": "Details", "sql": "select 'replace me' as item, $1::text as record_id" }
+      {
+        "title": "To",
+        "sql": "select name as institution, contact_name as attention, contact_email as email, provider_code, current_date as invoice_date, current_date + pays_within_days as due_date from institutions where id = $1"
+      },
+      {
+        "title": "Commission claimed",
+        "note": "Students who have passed census, at the rate in our agreement.",
+        "sql": "select l.student, l.ref as application, c.name as course, l.period, a.census_on as census, l.currency, cm.tuition_cents, cm.pct as rate_pct, l.amount_cents from commission_ledger l join commissions cm on cm.id = l.id join applications a on a.id = l.application_id join courses c on c.id = a.course_id where l.institution_id = $1 and l.state = 'claim now' order by l.student"
+      },
+      {
+        "title": "Total",
+        "note": "Add GST or state that commission on offshore students is zero-rated or GST-free, as your accountant advises.",
+        "sql": "select currency, count(*) as claims, sum(amount_cents) as total_cents from commission_ledger where institution_id = $1 and state = 'claim now' group by currency"
+      }
+    ]
+  },
+  {
+    "name": "student-checklist",
+    "title": "Your application checklist",
+    "for_each": "select distinct s.id, s.name from students s join applications a on a.student_id = s.id where a.stage not in ('completed','withdrawn','refused','enrolled') order by s.name",
+    "file": "name",
+    "sections": [
+      {
+        "title": "Your applications",
+        "sql": "select a.ref, i.name as institution, c.name as course, a.intake_on as intake, replace(a.stage, '_', ' ') as where_it_is, a.offer_expires_on as offer_expires, a.conditions from applications a join courses c on c.id = a.course_id join institutions i on i.id = c.institution_id where a.student_id = $1 and a.stage not in ('completed','withdrawn','refused') order by a.intake_on"
+      },
+      {
+        "title": "Documents",
+        "note": "Send a clear scan or photo of anything marked needed.",
+        "sql": "select replace(kind, '_', ' ') as document, case status when 'required' then 'needed' when 'rejected' then 'needed again' else status end as status, note from documents where student_id = $1 order by case status when 'required' then 0 when 'rejected' then 0 else 1 end, kind"
+      },
+      {
+        "title": "Visa",
+        "sql": "select country, kind, status, lodged_on, expires_on from visas where student_id = $1 order by coalesce(lodged_on, current_date) desc"
+      }
+    ]
+  },
+  {
+    "name": "sub-agent-statement",
+    "title": "Sub-agent commission statement",
+    "for_each": "select distinct sa.id, sa.name from sub_agents sa join students s on s.sub_agent_id = sa.id join applications a on a.student_id = s.id join commissions cm on cm.application_id = a.id where cm.status = 'paid' and cm.sub_agent_share_cents > 0 and cm.sub_agent_paid_on is null order by sa.name",
+    "file": "name",
+    "sections": [
+      {
+        "title": "Your share, commission received and not yet paid to you",
+        "sql": "select s.name as student, a.ref, i.name as institution, cm.period, cm.paid_on as we_were_paid, cm.currency, cm.paid_cents as commission_received_cents, sa.share_pct, cm.sub_agent_share_cents as your_share_cents from commissions cm join applications a on a.id = cm.application_id join students s on s.id = a.student_id join sub_agents sa on sa.id = s.sub_agent_id join courses c on c.id = a.course_id join institutions i on i.id = c.institution_id where sa.id = $1 and cm.status = 'paid' and cm.sub_agent_share_cents > 0 and cm.sub_agent_paid_on is null order by cm.paid_on"
+      },
+      {
+        "title": "Total due to you",
+        "sql": "select cm.currency, sum(cm.sub_agent_share_cents) as total_cents from commissions cm join applications a on a.id = cm.application_id join students s on s.id = a.student_id where s.sub_agent_id = $1 and cm.status = 'paid' and cm.sub_agent_share_cents > 0 and cm.sub_agent_paid_on is null group by cm.currency"
+      },
+      {
+        "title": "Still with the institution",
+        "note": "Your share follows when the institution pays us.",
+        "sql": "select s.name as student, a.ref, cm.period, cm.status, cm.currency, cm.sub_agent_share_cents as your_share_cents from commissions cm join applications a on a.id = cm.application_id join students s on s.id = a.student_id where s.sub_agent_id = $1 and cm.status in ('expected','invoiced') and cm.claimable_on <= current_date + 90 order by cm.claimable_on"
+      }
     ]
   }
 ]

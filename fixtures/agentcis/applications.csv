@@ -1,0 +1,5 @@
+Application ID,Client ID,Partner,Product,Workflow,Stage,Status,Intake,Assignee,Started At
+AP-501,AC-2001,Harbour City University,Master of Data Science,Australia Student,Offer Letter,In Progress,Feb 2027,Priya Sharma,12/08/2026
+AP-502,AC-2002,Wellington Business School,Graduate Diploma in Business,New Zealand Student,Visa Application,In Progress,01/02/2027,Rekha Joshi,05/06/2026
+AP-503,AC-2003,Wellington Business School,Graduate Diploma in Business,New Zealand Student,Application,Discontinued,01/07/2026,Priya Sharma,25/06/2026
+AP-504,AC-9999,Wellington Business School,Graduate Diploma in Business,New Zealand Student,Application,In Progress,01/07/2027,,01/09/2026

@@ -1,10 +1,10 @@
 {
   "_": "Your business on every document and view. Change these and run `npm run docs` or `npm run view`.",
-  "business_name": "Your Business",
+  "business_name": "Harbourline Education",
   "logo_path": "",
   "primary": "#6654f5",
   "accent": "#ca5a8b",
   "ink": "#0b0c18",
   "paper": "#ffffff",
-  "footer_line": "Prepared with Education Agency for Claude Code."
+  "footer_line": "Harbourline Education, Auckland, Melbourne and Kathmandu. Demo data: change brand.json to your own name, logo and GST or ABN."
 }
