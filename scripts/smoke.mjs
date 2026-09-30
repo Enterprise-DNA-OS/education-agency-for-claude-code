@@ -178,7 +178,7 @@ try {
   const verbs = new Set([...help.reads, 'student', 'application', 'institution', 'compliance', 'weekly-review', 'add', 'update', 'log', 'stage', 'task-done', 'invoice', 'paid', 'block', 'sub-agent-paid', 'draft-follow-up', 'draft-offer-chase', 'draft-document-request', 'draft-commission-claim', 'import', 'export', 'help']);
   for (const f of cmds) {
     const text = fs.readFileSync(path.join(REPO_ROOT, '.claude', 'commands', f), 'utf8');
-    ok(/^---\ndescription: .+\n---/.test(text), `${f} has a description`);
+    ok(/^---\r?\ndescription: .+\r?\n---/.test(text), `${f} has a description`);
     for (const m of text.matchAll(/npm run agency -- ([a-z-]+)/g)) ok(verbs.has(m[1]), `${f}: ${m[1]} is a real command`);
   }
 
